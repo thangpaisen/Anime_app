@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Pressable,
   ScrollView,
+  FlatList
 } from 'react-native';
 import Header from './Header';
 import LinearGradient from 'react-native-linear-gradient';
@@ -16,50 +17,60 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import {getAnimeDetails} from './../../services/services';
 import imageImp from '../../assets/images/thumbnailLoading.png';
 import {joinCategory} from './../../utils/index';
-import { useNavigation } from "@react-navigation/native";
+import {useNavigation} from '@react-navigation/native';
 import {useIsFocused} from '@react-navigation/native';
+import Loading from './../../components/Loading';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSelector,useDispatch } from "react-redux";
+import {getDataBookmarks,addToBookmarks} from "../../redux/actions/bookmarks"
+import { addToHistoryWatch } from "./../../redux/actions/historyWatch";
+import { Colors } from "./../../constants/Colors";
 function FocusAwareStatusBar(props) {
   const isFocused = useIsFocused();
 
   return isFocused ? <StatusBar {...props} /> : null;
 }
-const ItemEpisode = item => {
-  return (
-    <View style={styles.itemEpisodes}>
-      <Text
-        style={{
-          color: 'white',
-          fontSize: 16,
-        }}>
-        {item.name}
-      </Text>
-    </View>
-  );
-};
 const Details = ({route}) => {
-  const slug = route?.params?.slug || '';
+  const dataAnime = route?.params?.data || '';
   const [categories, setCategories] = useState('');
   const [animeDetails, setAnimeDetails] = useState({});
-  const navigation =useNavigation();
+  const [loading, setLoading] = useState(false);
+  const [isBookmarks, setIsBookmarks] = useState(false);
+  const navigation = useNavigation();
+    const dispatch = useDispatch()
+    const dataBookmarks = useSelector(state => state.bookmarks)
+    const historyWatch = useSelector(state => state.historyWatch)
   useEffect(() => {
-    getAnimeDetails(slug).then(data => {
+    setLoading(true);
+    getAnimeDetails(dataAnime.slug).then(data => {
       setAnimeDetails(data);
+      setLoading(false);
     });
+    var index = dataBookmarks.findIndex(x => x.slug === dataAnime.slug )
+    if(index !== -1)
+        setIsBookmarks(true);
   }, []);
-  console.log('slug', animeDetails.slug);
+//   console.log('daa',data);
+  const handleAddBookmarks=() => {
+      if(dataBookmarks.findIndex(x => x.slug === dataAnime.slug )===-1)
+        dispatch(addToBookmarks(dataAnime))
+  }
+  const lastWatched =()=>{
+      var lastWatched = historyWatch.find(x => x.slug===dataAnime.slug)
+      return lastWatched.lastWatched?.full_name
+  }
   return (
     <View style={styles.container}>
       <FocusAwareStatusBar
-        backgroundColor="transparent"
-        barStyle="light-content"
-        translucent={true}
+       backgroundColor="#171821"
+                barStyle="light-content"
         // hidden={true}
       />
       <Header />
       <ScrollView>
         <View style={{style: styles.thumbnail}}>
           <Image
-            source={{uri: animeDetails.thumbnail} || imageImp}
+            source={{uri: dataAnime.thumbnail} || imageImp}
             style={{width: width, height: height / 3}}
           />
           <LinearGradient
@@ -68,50 +79,71 @@ const Details = ({route}) => {
           />
           <View style={styles.title}>
             <Text style={styles.nameAnime} numberOfLines={2}>
-              {animeDetails.name}
+              {dataAnime.name}
             </Text>
             <Text style={styles.totalViewAnime}>
-              {/* {item.views} */}
               {animeDetails?.views
                 ?.toString()
-                .replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')}{' '}
+                .replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,') + ' ' || '? '}
               lượt xem
             </Text>
           </View>
         </View>
-        <View style={styles.description}>
-          <Text style={{color: '#e7e7e7', fontSize: 14}}>
-            {animeDetails?.description}
-          </Text>
-        </View>
+        {!loading?
+        <View style={{flex:1}}>
+          <View style={styles.description}>
+            <Text style={{color: '#e7e7e7', fontSize: 14}}>
+              {animeDetails?.description}
+            </Text>
+          </View>
+        
         <View style={styles.categories}>
           <Text style={{color: '#e7e7e7', fontSize: 14}} numberOfLines={2}>
             Thể loại: {joinCategory(animeDetails?.genres)}
           </Text>
         </View>
-
+        {animeDetails?.episodes?.length>0?
         <View style={styles.playVideo}>
-          <TouchableOpacity style={styles.buttonPlayVideo} onPress={() =>{
-              navigation.navigate('WatchVideo')
-          }}>
+          <TouchableOpacity
+            style={styles.buttonPlayVideo}
+            onPress={() => {
+              navigation.navigate('WatchVideo');
+               dispatch(addToHistoryWatch({
+                            slug:dataAnime.slug,
+                            name:dataAnime.name,
+                            thumbnail:dataAnime.thumbnail,
+                            lastWatched:animeDetails?.episodes[0]
+                        }))
+            }}>
             <Icon name="play" size={24} color="white" />
-            <Text style={styles.textButton}>Xem ngay</Text>
+            <Text style={styles.textButton}> Xem ngay </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.buttonPlayVideo}>
+          {historyWatch.findIndex(x => x.slug===dataAnime.slug)!==-1&&
+          <TouchableOpacity style={styles.buttonPlayVideo}
+          onPress={() => {
+              navigation.navigate('WatchVideo');
+            }}>
             <Icon name="play" size={24} color="white" />
-            <Text style={styles.textButton} numberOfLines={1}>
-              {' '}
-              Xem Tập 7 - Quyết chiến! Bầu cử Hội trưởng Hội học sinh
+            <Text style={styles.textButton}
+                numberOfLines={1} ellipsizeMode="tail"
+            >
+             {` ${lastWatched()} `}
             </Text>
-          </TouchableOpacity>
-        </View>
+          </TouchableOpacity>}
+        </View>:
+        <Text style={{color:'white',fontSize:16,padding:20,color:Colors.focused}}>
+            Đây là phim sắp chiếu, hãy bấm nút theo dõi để nhận thông báo khi có tập mới nhé!
+        </Text>
+        }
         <View style={styles.react}>
           <View style={styles.itemReact}>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() =>{
+                handleAddBookmarks();
+            }}>
               <Icon
-                name={true ? 'heart' : 'heart-outline'}
+                name={dataBookmarks.findIndex(x => x.slug === dataAnime.slug )!==-1 ? 'heart' : 'heart-outline'}
                 size={35}
-                color={true ? 'red' : 'white'}
+                color={dataBookmarks.findIndex(x => x.slug === dataAnime.slug )!==-1 ? 'red' : 'white'}
               />
             </TouchableOpacity>
             <Text style={styles.textItemReact}>Theo Dõi</Text>
@@ -135,24 +167,36 @@ const Details = ({route}) => {
             <Text style={styles.textItemReact}>Đánh giá</Text>
           </View>
         </View>
+        {animeDetails?.episodes?.length>0&&
         <View style={styles.listEpisodes}>
           <Text style={styles.titleListEpisodes}>Danh sách tập</Text>
           <View style={styles.episodes}>
             {animeDetails?.episodes?.map(item => (
-              <TouchableOpacity style={styles.itemEpisodes} key={item.slug} onPress={() =>{
-              navigation.navigate('WatchVideo')
-          }}>
+              <TouchableOpacity
+                key={item.slug}
+                style={styles.itemEpisodes}
+                onPress={() => {
+                  navigation.navigate('WatchVideo');
+                    dispatch(addToHistoryWatch({
+                            slug:dataAnime.slug,
+                            name:dataAnime.name,
+                            thumbnail:dataAnime.thumbnail,
+                            lastWatched:item
+                        }))
+                }}>
                 <Text
                   style={{
                     color: 'white',
                     fontSize: 16,
+                    textAlign: 'center'
                   }}>
                   {item.name}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-        </View>
+        </View>}
+        </View>:<Loading/>}
       </ScrollView>
     </View>
   );
@@ -199,8 +243,10 @@ const styles = StyleSheet.create({
   },
   listEpisodes: {
     padding: 10,
+    paddingHorizontal:5,
   },
   titleListEpisodes: {
+      marginLeft:5,
     fontSize: 18,
     color: '#e7e7e7',
   },
@@ -209,31 +255,35 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   itemEpisodes: {
-    padding: 6,
+    paddingVertical:8,
+    width:(width-50)/4,
     paddingHorizontal: 20,
     borderRadius: 6,
     backgroundColor: '#333',
-    marginRight: 10,
+    marginHorizontal: 5,
     marginTop: 10,
   },
   playVideo: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
+    justifyContent: 'center',
     marginTop: 10,
   },
   buttonPlayVideo: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginHorizontal:10,
     padding: 10,
     backgroundColor: '#333',
     borderRadius: 10,
-    maxWidth: width / 2.5,
+    width: width / 2.8,
     marginVertical: 10,
   },
   textButton: {
+      flex:1,
     fontSize: 16,
     color: '#fff',
-    marginHorizontal: 4,
+    textAlign: 'center',
+    // paddingHorizontal:,
   },
   react: {
     marginVertical: 20,

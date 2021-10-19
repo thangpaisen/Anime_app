@@ -12,7 +12,9 @@ import {SwiperFlatList} from 'react-native-swiper-flatlist';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import {getSlideAnime} from '../../services/services';
+import { useNavigation } from "@react-navigation/native";
 const Slider = ({refreshing}) => {
+const navigation = useNavigation();
   const [dataSlide, setDataSlide] = useState([]);
   useEffect(() => {
     getSlideAnime()
@@ -43,7 +45,7 @@ const Slider = ({refreshing}) => {
           <Pressable
             style={{}}
             onPress={() => {
-              //   console.log(item)
+              navigation.navigate('Details', {data: item || ''})
             }}>
             <Image
               source={{uri: item.thumbnail}}
@@ -69,9 +71,10 @@ const {width, height} = Dimensions.get('window');
 const styles = StyleSheet.create({
   slider: {
     // flex: 1,
-    paddingBottom: 10,
+    marginBottom:10,
     justifyContent: 'center',
     alignItems: 'center',
+
   },
   coating: {
     position: 'absolute',

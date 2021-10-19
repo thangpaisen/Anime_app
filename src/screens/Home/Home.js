@@ -4,16 +4,25 @@ import Header from "./Header";
 import Slider from "./Slider";
 import ListAnimeHome from "./../../components/ListAnimeHome";
 import {getAnimeRecently,getAnimeRecommended,getAnimeRanking} from '../../services/services'
+import {getDataBookmarks} from "../../redux/actions/bookmarks"
+import {getDataHistoryWatch} from "../../redux/actions/historyWatch"
+import { useDispatch } from "react-redux";
 const wait = (timeout) => {
   return new Promise(resolve => setTimeout(resolve, timeout));
 }
 const Home = () => {
     const [refreshing, setRefreshing] = React.useState(false);
+    const dispatch = useDispatch()
     const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     wait(0).then(() => setRefreshing(false));
   }, []);
+  useEffect(() => {
+      dispatch(getDataBookmarks()) 
+      dispatch(getDataHistoryWatch()) 
+  }, [])
     return (
+        
         <View style={styles.container}>
         <StatusBar 
             backgroundColor="#171821"

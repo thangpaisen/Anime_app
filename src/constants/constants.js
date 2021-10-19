@@ -23,6 +23,6 @@ const GENRES = [
     background:'#171821',
 }
 module.exports = {
-  color,
+  COLORS,
   GENRES,
 };

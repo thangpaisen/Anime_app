@@ -1,85 +1,53 @@
-import React,{useEffect, useState} from 'react'
-import { StyleSheet, Text, View,ScrollView,Image,Dimensions,FlatList } from 'react-native'
-import Header from "./Header";
-import imageImp from '../../assets/images/thumbnailLoading.png'
-import {getAnimeRecently} from '../../services/services'
+import React, {useEffect, useState} from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  Image,
+  Dimensions,
+  FlatList,
+  Pressable,
+} from 'react-native';
+import Header from './Header';
+import imageImp from '../../assets/images/thumbnailLoading.png';
+import {getAnimeRecently} from '../../services/services';
+import {useNavigation} from '@react-navigation/native';
+import CartAnime from "./../../components/CartAnime";
 
-const Cart =({data})=>{
-    return(
-<View style={styles.content}>
-                        <Image style={styles.image} 
-                            source={
-                                {uri: data?.thumbnail}||
-                                imageImp
-                                } />
-                        <View
-                            style={{
-                            position: 'absolute',
-                                backgroundColor: '#333',
-                            top: 4,
-                            left: 0,
-                            marginRight: 30,
-                            padding: 2,
-                            paddingRight:6,
-                            borderTopRightRadius: 6,
-                            borderBottomRightRadius: 6,
-                            }}>
-                            <Text
-                            style={styles.latestEpisode}
-                            numberOfLines={1}
-                            ellipsizeMode="tail">
-                            {data?.latestEpisode.name ||data?.time } 
-                            </Text>
-                        </View>
-                        <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
-                            {data?.name} 
-                        </Text>
-                        </View>
-    )
-}
 const ListAllAnime = ({route}) => {
-    const data = route?.params?.data ||[]
-    const title = route?.params?.title ||''
-    const [animeRecently, setAnimeRecently] = useState([])
+  const data = route?.params?.data || [];
+  const title = route?.params?.title || '';
 
-    useEffect(() => {
-        getAnimeRecently()
-        .then((res) => {
-            setAnimeRecently(res)
-        })
-    }, [])
-    return (
-        <View style={styles.container}>
-            <Header title={title}/>
-            <ScrollView>
-                <View style={{
-                    // marginTop: 10,
-                    flexDirection: 'row',
-                    flexWrap: 'wrap',
-                }}>
-                {data.map((item, index) =>
-                        <Cart data={item} key={item.slug}/>
-                    )}
-                </View>
-            </ScrollView>
-        </View>
-    )
-}
+  return (
+    <View style={styles.container}>
+      <Header title={title} />
+        <FlatList
+            data={data}
+            renderItem={({item}) =>
+                    <CartAnime data={item}/>
+            }
+            keyExtractor={(item,index) => item.slug}
+            numColumns={2}
+          />
+    </View>
+  );
+};
 
-export default ListAllAnime
+export default ListAllAnime;
 const {width, height} = Dimensions.get('window');
 const styles = StyleSheet.create({
-    container:{
-        flex: 1,
-               backgroundColor:'#171821',
-    },
-    content: {
+  container: {
+    flex: 1,
+    backgroundColor: '#171821',
+  },
+  content: {
     marginLeft: 10,
     marginVertical: 10,
-    width:(width-30)/2,
+    width: (width - 30) / 2,
   },
   image: {
-    width:(width-30)/2,
+    width: (width - 30) / 2,
     height: 100,
     borderRadius: 4,
   },
@@ -94,4 +62,4 @@ const styles = StyleSheet.create({
     color: '#fff',
     lineHeight: 14,
   },
-})
+});
