@@ -9,7 +9,8 @@ import {
   TouchableOpacity,
   Pressable,
   ScrollView,
-  FlatList
+  FlatList,
+  ToastAndroid,
 } from 'react-native';
 import Header from './Header';
 import LinearGradient from 'react-native-linear-gradient';
@@ -21,10 +22,13 @@ import {useNavigation} from '@react-navigation/native';
 import {useIsFocused} from '@react-navigation/native';
 import Loading from './../../components/Loading';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useSelector,useDispatch } from "react-redux";
-import {getDataBookmarks,addToBookmarks} from "../../redux/actions/bookmarks"
-import { addToHistoryWatch } from "./../../redux/actions/historyWatch";
-import { Colors } from "./../../constants/Colors";
+import {useSelector, useDispatch} from 'react-redux';
+import {
+  removeItemToBookmarks,
+  addToBookmarks,
+} from '../../redux/actions/bookmarks';
+import {addToHistoryWatch} from './../../redux/actions/historyWatch';
+import {Colors} from './../../constants/Colors';
 function FocusAwareStatusBar(props) {
   const isFocused = useIsFocused();
 
@@ -37,33 +41,34 @@ const Details = ({route}) => {
   const [loading, setLoading] = useState(false);
   const [isBookmarks, setIsBookmarks] = useState(false);
   const navigation = useNavigation();
-    const dispatch = useDispatch()
-    const dataBookmarks = useSelector(state => state.bookmarks)
-    const historyWatch = useSelector(state => state.historyWatch)
+  const dispatch = useDispatch();
+  const dataBookmarks = useSelector(state => state.bookmarks);
+  const historyWatch = useSelector(state => state.historyWatch);
   useEffect(() => {
     setLoading(true);
     getAnimeDetails(dataAnime.slug).then(data => {
       setAnimeDetails(data);
       setLoading(false);
     });
-    var index = dataBookmarks.findIndex(x => x.slug === dataAnime.slug )
-    if(index !== -1)
-        setIsBookmarks(true);
+    var index = dataBookmarks.findIndex(x => x.slug === dataAnime.slug);
+    if (index !== -1) setIsBookmarks(true);
   }, []);
-//   console.log('daa',data);
-  const handleAddBookmarks=() => {
-      if(dataBookmarks.findIndex(x => x.slug === dataAnime.slug )===-1)
-        dispatch(addToBookmarks(dataAnime))
-  }
-  const lastWatched =()=>{
-      var lastWatched = historyWatch.find(x => x.slug===dataAnime.slug)
-      return lastWatched.lastWatched?.full_name
-  }
+  const handleAddBookmarks = () => {
+    if (dataBookmarks.findIndex(x => x.slug === dataAnime.slug) === -1)
+      dispatch(addToBookmarks(dataAnime));
+    else {
+      dispatch(removeItemToBookmarks(dataAnime));
+    }
+  };
+  const lastWatched = () => {
+    var lastWatched = historyWatch.find(x => x.slug === dataAnime.slug);
+    return lastWatched.lastWatched?.full_name;
+  };
   return (
     <View style={styles.container}>
       <FocusAwareStatusBar
-       backgroundColor="#171821"
-                barStyle="light-content"
+        backgroundColor="#171821"
+        barStyle="light-content"
         // hidden={true}
       />
       <Header />
@@ -89,114 +94,176 @@ const Details = ({route}) => {
             </Text>
           </View>
         </View>
-        {!loading?
-        <View style={{flex:1}}>
-          <View style={styles.description}>
-            <Text style={{color: '#e7e7e7', fontSize: 14}}>
-              {animeDetails?.description}
-            </Text>
-          </View>
-        
-        <View style={styles.categories}>
-          <Text style={{color: '#e7e7e7', fontSize: 14}} numberOfLines={2}>
-            Thể loại: {joinCategory(animeDetails?.genres)}
-          </Text>
-        </View>
-        {animeDetails?.episodes?.length>0?
-        <View style={styles.playVideo}>
-          <TouchableOpacity
-            style={styles.buttonPlayVideo}
-            onPress={() => {
-              navigation.navigate('WatchVideo');
-               dispatch(addToHistoryWatch({
-                            slug:dataAnime.slug,
-                            name:dataAnime.name,
-                            thumbnail:dataAnime.thumbnail,
-                            lastWatched:animeDetails?.episodes[0]
-                        }))
-            }}>
-            <Icon name="play" size={24} color="white" />
-            <Text style={styles.textButton}> Xem ngay </Text>
-          </TouchableOpacity>
-          {historyWatch.findIndex(x => x.slug===dataAnime.slug)!==-1&&
-          <TouchableOpacity style={styles.buttonPlayVideo}
-          onPress={() => {
-              navigation.navigate('WatchVideo');
-            }}>
-            <Icon name="play" size={24} color="white" />
-            <Text style={styles.textButton}
-                numberOfLines={1} ellipsizeMode="tail"
-            >
-             {` ${lastWatched()} `}
-            </Text>
-          </TouchableOpacity>}
-        </View>:
-        <Text style={{color:'white',fontSize:16,padding:20,color:Colors.focused}}>
-            Đây là phim sắp chiếu, hãy bấm nút theo dõi để nhận thông báo khi có tập mới nhé!
-        </Text>
-        }
-        <View style={styles.react}>
-          <View style={styles.itemReact}>
-            <TouchableOpacity onPress={() =>{
-                handleAddBookmarks();
-            }}>
-              <Icon
-                name={dataBookmarks.findIndex(x => x.slug === dataAnime.slug )!==-1 ? 'heart' : 'heart-outline'}
-                size={35}
-                color={dataBookmarks.findIndex(x => x.slug === dataAnime.slug )!==-1 ? 'red' : 'white'}
-              />
-            </TouchableOpacity>
-            <Text style={styles.textItemReact}>Theo Dõi</Text>
-          </View>
-          <View style={styles.itemReact}>
-            <TouchableOpacity>
-              <Icon name="chatbox-outline" size={35} color="white" />
-            </TouchableOpacity>
-            <Text style={styles.textItemReact}>Bình luận</Text>
-          </View>
-          <View style={styles.itemReact}>
-            <TouchableOpacity>
-              <Icon name="share-social-outline" size={35} color="white" />
-            </TouchableOpacity>
-            <Text style={styles.textItemReact}>Chia sẻ</Text>
-          </View>
-          <View style={styles.itemReact}>
-            <TouchableOpacity>
-              <Icon name="star-outline" size={35} color="white" />
-            </TouchableOpacity>
-            <Text style={styles.textItemReact}>Đánh giá</Text>
-          </View>
-        </View>
-        {animeDetails?.episodes?.length>0&&
-        <View style={styles.listEpisodes}>
-          <Text style={styles.titleListEpisodes}>Danh sách tập</Text>
-          <View style={styles.episodes}>
-            {animeDetails?.episodes?.map(item => (
-              <TouchableOpacity
-                key={item.slug}
-                style={styles.itemEpisodes}
-                onPress={() => {
-                  navigation.navigate('WatchVideo');
-                    dispatch(addToHistoryWatch({
-                            slug:dataAnime.slug,
-                            name:dataAnime.name,
-                            thumbnail:dataAnime.thumbnail,
-                            lastWatched:item
-                        }))
-                }}>
-                <Text
-                  style={{
-                    color: 'white',
-                    fontSize: 16,
-                    textAlign: 'center'
+        {!loading ? (
+          <View style={{flex: 1}}>
+            <View style={styles.description}>
+              <Text style={{color: '#e7e7e7', fontSize: 14}}>
+                {animeDetails?.description}
+              </Text>
+            </View>
+
+            <View style={styles.categories}>
+              <Text style={{color: '#e7e7e7', fontSize: 14}} numberOfLines={2}>
+                Thể loại: {joinCategory(animeDetails?.genres)}
+              </Text>
+            </View>
+            {animeDetails?.episodes?.length > 0 ? (
+              <View style={styles.playVideo}>
+                <TouchableOpacity
+                  style={styles.buttonPlayVideo}
+                  onPress={() => {
+                    navigation.navigate('WatchVideo', {
+                      idAnime: animeDetails.id,
+                      tap: 0,
+                    });
+                    dispatch(
+                      addToHistoryWatch({
+                        slug: dataAnime.slug,
+                        name: dataAnime.name,
+                        thumbnail: dataAnime.thumbnail,
+                        lastWatched: animeDetails?.episodes[0],
+                      }),
+                    );
                   }}>
-                  {item.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Icon name="play" size={24} color="white" />
+                  <Text style={styles.textButton}> Xem ngay </Text>
+                </TouchableOpacity>
+                {historyWatch.findIndex(x => x.slug === dataAnime.slug) !==
+                  -1 && (
+                  <TouchableOpacity
+                    style={styles.buttonPlayVideo}
+                    onPress={() => {
+                      navigation.navigate('WatchVideo', {
+                        idAnime: animeDetails.id,
+                        tap:
+                          historyWatch.find(x => x.slug === dataAnime.slug)
+                            .lastWatched.name - 1,
+                      });
+                    }}>
+                    <Icon name="play" size={24} color="white" />
+                    <Text
+                      style={styles.textButton}
+                      numberOfLines={1}
+                      ellipsizeMode="tail">
+                      {` ${lastWatched()} `}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              <Text
+                style={{
+                  color: 'white',
+                  fontSize: 16,
+                  padding: 20,
+                  color: Colors.focused,
+                }}>
+                Đây là phim sắp chiếu, hãy bấm nút theo dõi để nhận thông báo
+                khi có tập mới nhé!
+              </Text>
+            )}
+            <View style={styles.react}>
+              <View style={styles.itemReact}>
+                <TouchableOpacity
+                  onPress={() => {
+                    handleAddBookmarks();
+                  }}>
+                  <Icon
+                    name={
+                      dataBookmarks.findIndex(
+                        x => x.slug === dataAnime.slug,
+                      ) !== -1
+                        ? 'heart'
+                        : 'heart-outline'
+                    }
+                    size={35}
+                    color={
+                      dataBookmarks.findIndex(
+                        x => x.slug === dataAnime.slug,
+                      ) !== -1
+                        ? 'red'
+                        : 'white'
+                    }
+                  />
+                </TouchableOpacity>
+                <Text style={styles.textItemReact}>Theo Dõi</Text>
+              </View>
+              <View style={styles.itemReact}>
+                <TouchableOpacity
+                  onPress={() => {
+                    ToastAndroid.show(
+                      'Chức năng đang phát triển',
+                      ToastAndroid.SHORT,
+                    );
+                  }}>
+                  <Icon name="chatbox-outline" size={35} color="white" />
+                </TouchableOpacity>
+                <Text style={styles.textItemReact}>Bình luận</Text>
+              </View>
+              <View style={styles.itemReact}>
+                <TouchableOpacity
+                  onPress={() => {
+                    ToastAndroid.show(
+                      'Chức năng đang phát triển',
+                      ToastAndroid.SHORT,
+                    );
+                  }}>
+                  <Icon name="share-social-outline" size={35} color="white" />
+                </TouchableOpacity>
+                <Text style={styles.textItemReact}>Chia sẻ</Text>
+              </View>
+              <View style={styles.itemReact}>
+                <TouchableOpacity
+                  onPress={() => {
+                    ToastAndroid.show(
+                      'Chức năng đang phát triển',
+                      ToastAndroid.SHORT,
+                    );
+                  }}>
+                  <Icon name="star-outline" size={35} color="white" />
+                </TouchableOpacity>
+                <Text style={styles.textItemReact}>Đánh giá</Text>
+              </View>
+            </View>
+            {animeDetails?.episodes?.length > 0 && (
+              <View style={styles.listEpisodes}>
+                <Text style={styles.titleListEpisodes}>Danh sách tập</Text>
+                <View style={styles.episodes}>
+                  {animeDetails?.episodes?.map((item, index) => (
+                    <TouchableOpacity
+                      key={item.slug}
+                      style={styles.itemEpisodes}
+                      onPress={() => {
+                        navigation.navigate('WatchVideo', {
+                          idAnime: animeDetails.id,
+                          tap: index,
+                        });
+                        dispatch(
+                          addToHistoryWatch({
+                            slug: dataAnime.slug,
+                            name: dataAnime.name,
+                            thumbnail: dataAnime.thumbnail,
+                            lastWatched: item,
+                          }),
+                        );
+                      }}>
+                      <Text
+                        style={{
+                          color: 'white',
+                          fontSize: 16,
+                          textAlign: 'center',
+                        }}>
+                        {item.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
           </View>
-        </View>}
-        </View>:<Loading/>}
+        ) : (
+          <Loading />
+        )}
       </ScrollView>
     </View>
   );
@@ -208,7 +275,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#171821',
-    // backgroundColor:'red'
   },
   coating: {
     position: 'absolute',
@@ -225,7 +291,6 @@ const styles = StyleSheet.create({
   },
   nameAnime: {
     fontSize: 22,
-    // paddingVertical:4,
     fontWeight: 'bold',
     color: 'white',
   },
@@ -235,7 +300,6 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   categories: {
-    // marginTop: 10,
     paddingHorizontal: 10,
   },
   description: {
@@ -243,10 +307,10 @@ const styles = StyleSheet.create({
   },
   listEpisodes: {
     padding: 10,
-    paddingHorizontal:5,
+    paddingHorizontal: 5,
   },
   titleListEpisodes: {
-      marginLeft:5,
+    marginLeft: 5,
     fontSize: 18,
     color: '#e7e7e7',
   },
@@ -255,8 +319,8 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   itemEpisodes: {
-    paddingVertical:8,
-    width:(width-50)/4,
+    paddingVertical: 8,
+    width: (width - 50) / 4,
     paddingHorizontal: 20,
     borderRadius: 6,
     backgroundColor: '#333',
@@ -271,7 +335,7 @@ const styles = StyleSheet.create({
   buttonPlayVideo: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal:10,
+    marginHorizontal: 10,
     padding: 10,
     backgroundColor: '#333',
     borderRadius: 10,
@@ -279,11 +343,10 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   textButton: {
-      flex:1,
+    flex: 1,
     fontSize: 16,
     color: '#fff',
     textAlign: 'center',
-    // paddingHorizontal:,
   },
   react: {
     marginVertical: 20,
@@ -292,7 +355,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-evenly',
   },
   itemReact: {
-    //   justifyContent: 'center',
     alignItems: 'center',
   },
   textItemReact: {color: '#fff', fontSize: 12, fontWeight: 'bold'},

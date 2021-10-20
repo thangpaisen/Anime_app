@@ -26,3 +26,9 @@ export const removeBookmarks = () => {
         type:'REMOVE_BOOKMARKS',
     }
 }
+export const removeItemToBookmarks = (data) => {
+    return{
+        type:'REMOVE_ITEM_TO_BOOKMARKS',
+        payload:data
+    }
+}

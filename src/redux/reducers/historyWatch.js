@@ -15,7 +15,7 @@ const historyWatch = (state = initState, action) => {
         else{
             var indexEpisodes = state.findIndex(x => x.lastWatched.slug === action.payload.lastWatched.slug )
             if(indexEpisodes === -1) {
-                data.splice(indexEpisodes, 1);
+                data.splice(indexAnime, 1);
                 data.unshift(action.payload);
                 AsyncStorage.setItem('HISTORY_WATCH', JSON.stringify([...data]));
             }
